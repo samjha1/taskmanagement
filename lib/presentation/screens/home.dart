@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:game/add_task.dart';
+import 'package:game/presentation/widgets/add_task.dart';
+import 'package:game/data/models/task_model.dart';
 import 'package:game/main.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';

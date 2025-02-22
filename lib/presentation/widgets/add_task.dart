@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:game/home.dart';
+import 'package:game/presentation/screens/home.dart';
 import 'package:game/main.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;

@@ -1,57 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:game/home.dart';
+import 'package:game/data/models/task_model.dart';
+import 'package:game/data/sources/remote_data_source.dart';
+import 'package:game/presentation/screens/home.dart';
 
-class Task {
-  final int id;
-  final String title;
-  final String description;
-  final bool isCompleted;
-  final DateTime? dueDate;
-  final String priority;
 
-  Task({
-    required this.id,
-    required this.title,
-    required this.description,
-    this.isCompleted = false,
-    this.dueDate,
-    this.priority = 'medium',
-  });
 
-  factory Task.fromJson(Map<String, dynamic> json) {
-    return Task(
-      id: int.tryParse(json['id'].toString()) ?? 0, // Ensure id is int
-      title: json['title'],
-      description: json['description'],
-      isCompleted:
-          json['isCompleted'].toString() == "1", // Convert string to bool
-    );
-  }
-}
-
-class ApiService {
-  static const String baseUrl = 'https://api.indataai.in/wereads';
-
-  Future<List<Task>> fetchTasks() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/taskget.php'));
-
-      if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
-        return data.isNotEmpty
-            ? data.map((task) => Task.fromJson(task)).toList()
-            : [];
-      } else {
-        return [];
-      }
-    } catch (e) {
-      return [];
-    }
-  }
-}
 
 final apiProvider = Provider((ref) => ApiService());
 
