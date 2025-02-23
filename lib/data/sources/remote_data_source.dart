@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/task_model.dart';
 
+
 class ApiService {
   static const String baseUrl = 'https://api.indataai.in/wereads';
 
@@ -22,5 +23,3 @@ class ApiService {
     }
   }
 }
-
-

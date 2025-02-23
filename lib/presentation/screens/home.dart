@@ -7,16 +7,34 @@ import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  final int? taskId; // Nullable taskId for editing
+  const HomeScreen({Key? key, this.taskId}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsyncValue = ref.watch(taskProvider);
     final filter = ref.watch(filterProvider);
+    final themeMode = ref.watch(themeModeProvider.notifier);
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: _buildAppBar(context, ref, filter),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('Task Manager'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+            onPressed: () {
+              themeMode.state = themeMode.state == ThemeMode.light
+                  ? ThemeMode.dark
+                  : ThemeMode.light;
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           _buildStatusBar(tasksAsyncValue),
@@ -38,217 +56,217 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, WidgetRef ref, String filter) {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Theme.of(context).primaryColor,
-      title: const Text(
-        'Task Manager',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+PreferredSizeWidget _buildAppBar(
+    BuildContext context, WidgetRef ref, String filter) {
+  return AppBar(
+    elevation: 0,
+    backgroundColor: Theme.of(context).primaryColor,
+    title: const Text(
+      'Task Manager',
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
       ),
-      actions: [
-        _buildFilterButton(ref),
-        IconButton(
-          icon: const Icon(Icons.search, color: Colors.white),
-          onPressed: () => _showSearchDialog(context),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterButton(WidgetRef ref) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.filter_list, color: Colors.white),
-      onSelected: (value) => ref.read(filterProvider.notifier).state = value,
-      itemBuilder: (context) => [
-        _buildFilterMenuItem('all', 'All Tasks', Icons.list),
-        _buildFilterMenuItem('completed', 'Completed', Icons.check_circle),
-        _buildFilterMenuItem('pending', 'Pending', Icons.pending_actions),
-        _buildFilterMenuItem('priority', 'High Priority', Icons.priority_high),
-      ],
-    );
-  }
-
-  PopupMenuItem<String> _buildFilterMenuItem(
-      String value, String text, IconData icon) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-          Text(text),
-        ],
+    ),
+    actions: [
+      _buildFilterButton(ref),
+      IconButton(
+        icon: const Icon(Icons.search, color: Colors.white),
+        onPressed: () => _showSearchDialog(context),
       ),
-    );
-  }
+    ],
+  );
+}
 
-  Widget _buildStatusBar(AsyncValue<List<Task>> tasksAsyncValue) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.white,
-      child: tasksAsyncValue.when(
-        data: (tasks) => Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildStatusItem(
-              'Total',
-              tasks.length.toString(),
-              Icons.assignment,
-              Colors.blue,
-            ),
-            _buildStatusItem(
-              'Completed',
-              tasks.where((t) => t.isCompleted).length.toString(),
-              Icons.check_circle,
-              Colors.green,
-            ),
-            _buildStatusItem(
-              'Pending',
-              tasks.where((t) => !t.isCompleted).length.toString(),
-              Icons.pending,
-              Colors.orange,
-            ),
-          ],
-        ),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Text('Error loading statistics'),
-      ),
-    );
-  }
+Widget _buildFilterButton(WidgetRef ref) {
+  return PopupMenuButton<String>(
+    icon: const Icon(Icons.filter_list, color: Colors.white),
+    onSelected: (value) => ref.read(filterProvider.notifier).state = value,
+    itemBuilder: (context) => [
+      _buildFilterMenuItem('all', 'All Tasks', Icons.list),
+      _buildFilterMenuItem('completed', 'Completed', Icons.check_circle),
+      _buildFilterMenuItem('pending', 'Pending', Icons.pending_actions),
+      _buildFilterMenuItem('priority', 'High Priority', Icons.priority_high),
+    ],
+  );
+}
 
-  Widget _buildStatusItem(
-      String label, String value, IconData icon, Color color) {
-    return Column(
+PopupMenuItem<String> _buildFilterMenuItem(
+    String value, String text, IconData icon) {
+  return PopupMenuItem(
+    value: value,
+    child: Row(
       children: [
-        Icon(icon, color: color),
-        const SizedBox(height: 4),
+        Icon(icon, size: 20),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
+    ),
+  );
+}
+
+Widget _buildStatusBar(AsyncValue<List<Task>> tasksAsyncValue) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    color: Colors.white,
+    child: tasksAsyncValue.when(
+      data: (tasks) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatusItem(
+            'Total',
+            tasks.length.toString(),
+            Icons.assignment,
+            Colors.blue,
+          ),
+          _buildStatusItem(
+            'Completed',
+            tasks.where((t) => t.isCompleted).length.toString(),
+            Icons.check_circle,
+            Colors.green,
+          ),
+          _buildStatusItem(
+            'Pending',
+            tasks.where((t) => !t.isCompleted).length.toString(),
+            Icons.pending,
+            Colors.orange,
+          ),
+        ],
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const Text('Error loading statistics'),
+    ),
+  );
+}
+
+Widget _buildStatusItem(
+    String label, String value, IconData icon, Color color) {
+  return Column(
+    children: [
+      Icon(icon, color: color),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+      Text(
+        label,
+        style: TextStyle(
+          color: Colors.grey[600],
+          fontSize: 12,
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildTaskList(AsyncValue<List<Task>> tasksAsyncValue, String filter) {
+  return tasksAsyncValue.when(
+    data: (tasks) {
+      final filteredTasks = _getFilteredTasks(tasks, filter);
+      return filteredTasks.isEmpty
+          ? _buildEmptyState()
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filteredTasks.length,
+              itemBuilder: (context, index) => TaskCard(
+                task: filteredTasks[index],
+                onStatusChanged: () => _handleStatusChange(context),
+                onDelete: () => _handleDelete(context),
+              ),
+            );
+    },
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (error, _) => _buildErrorState(error.toString()),
+  );
+}
+
+List<Task> _getFilteredTasks(List<Task> tasks, String filter) {
+  return switch (filter) {
+    'completed' => tasks.where((task) => task.isCompleted).toList(),
+    'pending' => tasks.where((task) => !task.isCompleted).toList(),
+    'priority' => tasks.where((task) => task.priority == 'high').toList(),
+    _ => tasks,
+  };
+}
+
+Widget _buildEmptyState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.assignment_outlined,
+          size: 64,
+          color: Colors.grey[400],
+        ),
+        const SizedBox(height: 16),
         Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+          'No tasks found',
+          style: TextStyle(
+            fontSize: 18,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
           ),
         ),
+        const SizedBox(height: 8),
         Text(
-          label,
+          'Add a new task to get started',
           style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
+            color: Colors.grey[500],
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildTaskList(AsyncValue<List<Task>> tasksAsyncValue, String filter) {
-    return tasksAsyncValue.when(
-      data: (tasks) {
-        final filteredTasks = _getFilteredTasks(tasks, filter);
-        return filteredTasks.isEmpty
-            ? _buildEmptyState()
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: filteredTasks.length,
-                itemBuilder: (context, index) => TaskCard(
-                  task: filteredTasks[index],
-                  onStatusChanged: () => _handleStatusChange(context),
-                  onDelete: () => _handleDelete(context),
-                ),
-              );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => _buildErrorState(error.toString()),
-    );
-  }
+Widget _buildErrorState(String error) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.error_outline,
+          color: Colors.red,
+          size: 48,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Error: $error',
+          style: const TextStyle(color: Colors.red),
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () {
+            // Implement retry logic
+          },
+          child: const Text('Retry'),
+        ),
+      ],
+    ),
+  );
+}
 
-  List<Task> _getFilteredTasks(List<Task> tasks, String filter) {
-    return switch (filter) {
-      'completed' => tasks.where((task) => task.isCompleted).toList(),
-      'pending' => tasks.where((task) => !task.isCompleted).toList(),
-      'priority' => tasks.where((task) => task.priority == 'high').toList(),
-      _ => tasks,
-    };
-  }
+void _showAddTaskDialog(BuildContext context) {
+  // Implement add task dialog
+}
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.assignment_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No tasks found',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add a new task to get started',
-            style: TextStyle(
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+void _showSearchDialog(BuildContext context) {
+  // Implement search dialog
+}
 
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 48,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error: $error',
-            style: const TextStyle(color: Colors.red),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Implement retry logic
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
+void _handleStatusChange(BuildContext context) {
+  // Implement status change logic
+}
 
-  void _showAddTaskDialog(BuildContext context) {
-    // Implement add task dialog
-  }
-
-  void _showSearchDialog(BuildContext context) {
-    // Implement search dialog
-  }
-
-  void _handleStatusChange(BuildContext context) {
-    // Implement status change logic
-  }
-
-  void _handleDelete(BuildContext context) {
-    // Implement delete logic
-  }
+void _handleDelete(BuildContext context) {
+  // Implement delete logic
 }
 
 class TaskCard extends StatelessWidget {
@@ -389,7 +407,13 @@ class TaskCard extends StatelessWidget {
         _buildActionButton(
           icon: Icons.edit,
           label: 'Edit',
-          onTap: () => _showEditDialog(context),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  AddTaskPage(taskId: task.id), // Pass the taskId here
+            ),
+          ),
         ),
         const SizedBox(width: 8),
         _buildActionButton(
@@ -403,7 +427,11 @@ class TaskCard extends StatelessWidget {
               textCancel: "No",
               confirmTextColor: Colors.white,
               onConfirm: () {
-                _deleteTask(task.id.toString()); // Convert int to String
+                if (task.id != null) {
+                  _deleteTask(task.id.toString()); // Call delete function
+                } else {
+                  Get.snackbar("Error", "Task ID is missing"); // Error handling
+                }
                 Get.back(); // Close dialog after deletion
               },
             );

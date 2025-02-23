@@ -9,7 +9,9 @@ import 'dart:convert';
 final isLoadingProvider = StateProvider<bool>((ref) => false);
 
 class AddTaskPage extends ConsumerStatefulWidget {
-  const AddTaskPage({Key? key}) : super(key: key);
+  final int? taskId; // Nullable taskId for editing
+
+  const AddTaskPage({Key? key, this.taskId}) : super(key: key);
 
   @override
   ConsumerState<AddTaskPage> createState() => _AddTaskPageState();
@@ -58,6 +60,46 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.taskId != null) {
+      _fetchTaskDetails(widget.taskId!);
+    }
+  }
+
+  Future<void> _fetchTaskDetails(int taskId) async {
+    final url = 'https://api.indataai.in/wereads/todoedit.php?id=$taskId';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        if (data['success'] == true && data['task'] != null) {
+          final task = data['task'];
+
+          setState(() {
+            _titleController.text = task['title'] ?? '';
+            _descriptionController.text = task['description'] ?? '';
+            _selectedDate = task['dueDate'] != null
+                ? DateTime.parse(task['dueDate'])
+                : null;
+            _priority = task['priority'] ?? 'low'; // Default to 'low'
+            _isUrgent = task['is_urgent'] == 1;
+          });
+        } else {
+          print('Error: Task not found');
+        }
+      } else {
+        print('Failed to fetch task details: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching task details: $e');
+    }
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -69,29 +111,28 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
         'description': _descriptionController.text,
         'dueDate': _selectedDate?.toIso8601String(),
         'priority': _priority,
-        'isUrgent': _isUrgent ? 1 : 0,
+        'is_urgent': _isUrgent ? 1 : 0,
       };
 
+      final url = widget.taskId == null
+          ? 'https://api.indataai.in/wereads/taskadd.php'
+          : 'https://api.indataai.in/wereads/updatetodo.php';
+
       final response = await http.post(
-        Uri.parse('https://api.indataai.in/wereads/taskadd.php'),
+        Uri.parse(url),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(task),
+        body: jsonEncode(
+            widget.taskId == null ? task : {...task, 'id': widget.taskId}),
       );
 
       final responseData = jsonDecode(response.body);
       if (response.statusCode == 200 && responseData['success']) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Task created successfully'),
-                ],
-              ),
+            SnackBar(
+              content:
+                  Text(widget.taskId == null ? 'Task created' : 'Task updated'),
               backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
             ),
           );
           Navigator.pop(context, true);
@@ -101,17 +142,7 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Error creating task: $e'),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     } finally {
       ref.read(isLoadingProvider.notifier).state = false;
